@@ -1,26 +1,55 @@
+import { selectFeedOrders, selectProfileOrders } from '@slices/feedSlice';
+import { selectIngredients } from '@slices/ingredientsSlice';
+import {
+  getOrderByNumber,
+  selectCurrentOrder,
+  clearCurrentOrder,
+} from '@slices/orderSlice';
 import { Preloader, OrderInfoUI } from '@ui';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
+import { useParams } from 'react-router-dom';
+
+import { useDispatch, useSelector } from '@services/store';
 
 import type { TIngredient } from '@utils-types';
 
 export const OrderInfo = (): React.JSX.Element => {
-  /** TODO: взять переменные orderData и ingredients из стора */
-  const orderData = {
-    createdAt: '',
-    ingredients: [],
-    _id: '',
-    status: '',
-    name: '',
-    updatedAt: 'string',
-    number: 0,
-  };
+  const dispatch = useDispatch();
+  const { number } = useParams();
+  const orderNumber = Number(number); // из строки в число
 
-  const ingredients: TIngredient[] = [];
+  // Справочник ингредиентов — нужен для состава и подсчёта суммы
+  const ingredients = useSelector(selectIngredients);
 
-  /**
-   * использование useMemo не обязательно
-   */
-  /* Готовим данные для отображения */
+  // Заказы, которые уже лежат в сторе (лента / история профиля)
+  const feedOrders = useSelector(selectFeedOrders);
+  const profileOrders = useSelector(selectProfileOrders);
+
+  // Заказ, который подтянули с сервера по номеру (прямой заход / F5)
+  const requestedOrder = useSelector(selectCurrentOrder);
+
+  // Ищем заказ по приоритету источников:
+  // 1) он уже в ленте  2) он уже в истории  3) остался только запрос по номеру
+  const orderData =
+    feedOrders.find((item) => item.number === orderNumber) ??
+    profileOrders.find((item) => item.number === orderNumber) ??
+    (requestedOrder?.number === orderNumber ? requestedOrder : null);
+
+  // Запрос к серверу отправляем ТОЛЬКО если заказа нигде нет
+  useEffect(() => {
+    if (!orderData && Number.isFinite(orderNumber)) {
+      void dispatch(getOrderByNumber(orderNumber));
+    }
+  }, [dispatch, orderData, orderNumber]);
+
+  // Чистим заказ из стора при уходе с модалки/страницы
+  useEffect(() => {
+    return (): void => {
+      dispatch(clearCurrentOrder());
+    };
+  }, [dispatch]);
+
+  // вычисляем данные для отображения (состав, дата, сумма)
   const orderInfo = useMemo(() => {
     if (!orderData || !ingredients.length) return null;
 
