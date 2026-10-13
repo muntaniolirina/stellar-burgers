@@ -36,3 +36,17 @@
 		'@utils': path.resolve(__dirname, './src/utils'),
 	},
 ```
+
+## Тесты
+
+Проект покрыт тестами двух уровней: unit-тесты (Jest) и E2E (Playwright).
+
+- Unit-тесты проверяют редьюсеры Redux-слайсов — [src/services/slices/**tests**/README.md](./src/services/slices/__tests__/README.md)
+- E2E-тесты проверяют флоу конструктора и создания заказа — [tests/README.md](./tests/README.md)
+
+Быстрый запуск:
+
+```bash
+npm run test # unit-тесты (Jest)
+npm run e2e # E2E-тесты (Playwright)
+```
